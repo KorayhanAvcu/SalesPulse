@@ -16,11 +16,13 @@ public class BulkWriter
         _dryRun = dryRun;
     }
 
-    public void Write(DataTable table)
+    // quiet: parça parça yazılan büyük tablolarda her parça için satır basma
+    public void Write(DataTable table, bool quiet = false)
     {
         if (_dryRun)
         {
-            Console.WriteLine($"   [dry-run] {table.TableName,-13}: {table.Rows.Count,9:N0} satır (yazılmadı)");
+            if (!quiet)
+                Console.WriteLine($"   [dry-run] {table.TableName,-13}: {table.Rows.Count,9:N0} satır (yazılmadı)");
             return;
         }
 
@@ -47,7 +49,8 @@ public class BulkWriter
             bulk.ColumnMappings.Add(column.ColumnName, column.ColumnName);
 
         bulk.WriteToServer(table);
-        Console.WriteLine($"   {table.TableName,-13}: {table.Rows.Count,9:N0} satır yazıldı");
+        if (!quiet)
+            Console.WriteLine($"   {table.TableName,-13}: {table.Rows.Count,9:N0} satır yazıldı");
     }
 
     // Tablo boş mu? (veri iki kez basılmasın diye)

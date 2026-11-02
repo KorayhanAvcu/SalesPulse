@@ -34,9 +34,20 @@ catalog.Run();
 Console.WriteLine($"      Süre: {stopwatch.Elapsed.TotalSeconds:F1} sn");
 
 // ---------------------------------------------------------
-// 2) MÜŞTERİLER  (sonraki adım)
-// 3) SİPARİŞLER  (sonraki adım)
+// 2) MÜŞTERİLER
 // ---------------------------------------------------------
+Console.WriteLine("[2/3] Müşteriler üretiliyor...");
+var customers = new CustomerGenerator(random, writer);
+customers.Run();
+Console.WriteLine($"      Süre: {stopwatch.Elapsed.TotalSeconds:F1} sn");
+
+// ---------------------------------------------------------
+// 3) SİPARİŞLER: sipariş + kalem + ödeme
+// ---------------------------------------------------------
+Console.WriteLine("[3/3] Siparişler üretiliyor...");
+var orders = new OrderGenerator(random, writer, catalog.Products, customers.Customers);
+orders.Run();
+Console.WriteLine($"      Süre: {stopwatch.Elapsed.TotalSeconds:F1} sn");
 
 // ---------------------------------------------------------
 // Özet
@@ -48,16 +59,14 @@ foreach (var group in products.GroupBy(p => p.Group))
     Console.WriteLine($"{group.Key,-20}: {group.Count(),5:N0} ürün, fiyat {group.Min(p => p.Price),9:N2} – {group.Max(p => p.Price),10:N2} TL");
 
 Console.WriteLine();
-Console.WriteLine($"Sınırlı üretim : {products.Count(p => p.IsLimitedEdition):N0}");
-Console.WriteLine($"Pasif ürün     : {products.Count(p => !p.IsActive):N0}");
-Console.WriteLine($"Markasız ürün  : {products.Count(p => p.PublisherId is null):N0}");
-Console.WriteLine($"Veri dönemi sonrası çıkacak (ön sipariş adayı): {products.Count(p => p.ReleaseDate > Settings.EndDate):N0}");
-
-Console.WriteLine();
-Console.WriteLine("=== RASTGELE 12 ÜRÜN ===");
-var sampleRandom = new Random(1);
-foreach (var p in products.OrderBy(_ => sampleRandom.Next()).Take(12))
-    Console.WriteLine($"{p.Price,9:N2} TL | {p.ReleaseDate:yyyy-MM-dd} | {p.Name}");
+Console.WriteLine($"=== SİPARİŞ ÖZETİ ===");
+Console.WriteLine($"Müşteri        : {customers.Customers.Count,12:N0}");
+Console.WriteLine($"Sipariş        : {orders.OrderCount,12:N0}");
+Console.WriteLine($"Sipariş kalemi : {orders.DetailCount,12:N0}");
+Console.WriteLine($"Toplam tutar   : {orders.TotalRevenue,12:N0} TL");
+Console.WriteLine($"Ortalama sepet : {orders.TotalRevenue / orders.OrderCount,12:N2} TL");
+foreach (var status in orders.StatusCounts.OrderBy(s => s.Key))
+    Console.WriteLine($"Durum {status.Key}        : {status.Value,12:N0}");
 
 Console.WriteLine();
 Console.WriteLine($"Toplam süre: {stopwatch.Elapsed.TotalSeconds:F1} sn");

@@ -10,7 +10,7 @@ public static class Settings
     // Veritabanı bağlantısı (Web/appsettings.json ile aynı)
     // Kendi bilgisayarında çalıştıran kişi Server kısmını değiştirmeli.
     public const string ConnectionString =
-        "Server=KORAYHAN\\SQLEXPRESS;Database=SalesPulseDb;Integrated Security=True;TrustServerCertificate=True";
+        "Server=DESKTOP-NDMQ7CM\\SQLEXPRESS;Database=SalesPulseDb;Integrated Security=True;TrustServerCertificate=True";
 
     // ---- Hacimler ----
     // ~1.200 ürün gerçek katalogdan (seriler, figürler, oyunlar), kalanı kurgusal
@@ -55,6 +55,48 @@ public static class Settings
     public const double CollectorRatio      = 0.20;
     public const double CollectorOrderShare = 0.60;
 
+    // %25'i tek seferlik: sadece 1 sipariş verir (tekrar alışveriş oranı anlamlı olsun)
+    public const double OneTimeRatio = 0.25;
+
+    // Üstel seçim: 1'den büyükse eski müşteriler daha sık alışveriş eder
+    // (1,5 gibi değerlerde en eski müşteri 2.000+ sipariş veriyor, gerçekçi değil)
+    public const double LoyaltySkew = 1.15;
+
+    // Müşterilerin %30'u veri döneminden önce kayıt olmuş (ilk günden sipariş olsun diye)
+    public static readonly DateTime CustomerSignupStart = new(2022, 1, 1);
+    public const double PreStartCustomerShare = 0.30;
+
+    // Siparişlerin %8'i başka bir şehre gider (hediye, iş adresi...)
+    public const double OtherCityShippingRate = 0.08;
+
+    // ---- Ürün satış dönemi ----
+    public const int    PreOrderWindowDays = 90;   // çıkıştan en fazla 90 gün önce ön sipariş açılır
+    public const double PreOrderFactor     = 0.5;  // ön siparişteki ürün daha az satar
+    public const int    NewReleaseDays     = 60;   // çıkış sonrası "yeni ürün" dönemi
+    public const double NewReleaseBoost    = 3.0;  // yeni çıkan ürün daha çok satar
+
+    // Pasif ürünler bu tarihten sonra satılmıyor
+    public static readonly DateTime InactiveCutoff = new(2025, 1, 1);
+
+    // ---- Fiyat ----
+    // Products.Price bugünkü fiyat; geçmişte yıllık %25 enflasyon kadar ucuzdu
+    public const double YearlyPriceIncrease = 1.25;
+    public const double NovemberDiscount    = 0.10; // Black Friday indirimi
+
+    // ---- Sipariş saati: 0-23 arası yoğunluk (gece düşük, akşam tepe) ----
+    public static readonly double[] HourWeights =
+    {
+        1.0, 0.6, 0.3, 0.2, 0.2, 0.3, 0.6, 1.2,
+        2.5, 3.5, 4.5, 5.0, 5.5, 5.0, 5.0, 5.0,
+        5.5, 6.0, 6.5, 7.5, 8.5, 9.0, 7.0, 3.0
+    };
+
+    // Kalem başına adet
+    public static readonly (short Quantity, double Weight)[] Quantities =
+    {
+        (1, 80), (2, 15), (3, 5)
+    };
+
     // ---- Sepet: siparişteki ürün çeşidi sayısı (ortalama ~1,75) ----
     public static readonly (int Lines, double Weight)[] BasketSizes =
     {
@@ -73,6 +115,19 @@ public static class Settings
 
     // Taksit sadece kredi kartında ve bu tutarın üzerindeki siparişlerde
     public const decimal InstallmentMinAmount = 1_000m;
+
+    public static readonly (byte Count, double Weight)[] Installments =
+    {
+        (1, 35), (3, 30), (6, 20), (9, 10), (12, 5)
+    };
+
+    // Havale ödemesi en geç 24 saatte gelir, kapıda ödeme teslimatta alınır
+    public const int TransferMaxDelayHours = 24;
+    public const int CashOnDeliveryDays    = 3;
+
+    public const byte PaymentCreditCard     = 1;
+    public const byte PaymentBankTransfer   = 3;
+    public const byte PaymentCashOnDelivery = 4;
 
     // ---- Sipariş durumları (Id'ler 01_tables.sql ile aynı) ----
     public const byte StatusPreOrder  = 1; // Ön Sipariş

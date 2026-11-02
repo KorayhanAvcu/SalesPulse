@@ -355,7 +355,7 @@ public class CatalogGenerator
         RoundPrice(min + (decimal)_random.NextDouble() * (max - min));
 
     // Mağaza fiyatı gibi yuvarla: 347,23 → 349,90
-    private static decimal RoundPrice(decimal price) =>
+    public static decimal RoundPrice(decimal price) =>
         Math.Max(9.90m, Math.Round(price / 10m) * 10m - 0.10m);
 
     private DateTime RandomDate(DateTime from, DateTime to) =>
