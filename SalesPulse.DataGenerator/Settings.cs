@@ -84,4 +84,49 @@ public static class Settings
 
     public const double CancelRate = 0.04;
     public const double ReturnRate = 0.03;
+
+    // Sipariş tarihine göre durum (veri dönemi sonuna, EndDate'e uzaklık)
+    public const int PreparingDays = 2;   // son 2 gün: çoğu "Hazırlanıyor"
+    public const int ShippingDays  = 5;   // 2-5 gün arası: çoğu "Kargoda"
+
+    // ---- Müşteri kayıt tarihleri ----
+    // %30'u veri döneminden önce (2022-2023) kayıt olmuş "eski" müşteri,
+    // kalanlar dönem boyunca katılıyor (yıllık büyüme ile).
+    public static readonly DateTime CustomerHistoryStart = new(2022, 1, 1);
+    public const double ExistingCustomerRatio = 0.30;
+
+    // Siparişlerin %8'i müşterinin kendi şehrinden farklı bir adrese gider (hediye, iş yeri...)
+    public const double OtherShippingCityRate = 0.08;
+
+    // ---- Ürün seçimi ----
+    // Çıkış tarihinden en fazla bu kadar gün önce ön sipariş alınabilir
+    public const int PreOrderWindowDays = 45;
+
+    // Pasif ürünler bu tarihten sonra satılmaz
+    public static readonly DateTime InactiveProductCutoff = new(2025, 1, 1);
+
+    // ---- Fiyat ----
+    // Ürün fiyatları "bugünkü" (EndDate) fiyat. Geçmişteki satış fiyatı
+    // yıllık enflasyon kadar düşük: 1 yıl önce = fiyat / 1,35
+    public const double YearlyPriceInflation = 1.35;
+
+    // Kasım indirimleri (Black Friday haftası): siparişlerin %50'sinde %10-25 indirim
+    public const double BlackFridayDiscountChance = 0.50;
+
+    // ---- Taksit seçenekleri (sadece kredi kartı, InstallmentMinAmount üstü) ----
+    public static readonly (byte Count, double Weight)[] Installments =
+    {
+        (1, 45), (2, 10), (3, 20), (6, 15), (9, 5), (12, 5)
+    };
+
+    // Kapıda ödeme bu tutarın üzerinde kabul edilmez
+    public const decimal CashOnDeliveryMaxAmount = 5_000m;
+
+    // ---- Saat dağılımı (0-23): gece düşük, akşam 20-22 zirve ----
+    public static readonly double[] HourFactors =
+    {
+        1.2, 0.7, 0.4, 0.3, 0.2, 0.2, 0.4, 0.8,   // 00-07
+        1.5, 2.5, 3.5, 4.0, 4.5, 4.5, 4.2, 4.2,   // 08-15
+        4.5, 5.0, 5.5, 6.0, 7.0, 7.5, 6.5, 3.5    // 16-23
+    };
 }
