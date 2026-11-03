@@ -1,0 +1,229 @@
+@model SalesIntelligenceDto
+@{
+    ViewData["Title"] = "Satış Analizi";
+}
+
+<div class="sp-page-head">
+    <div>
+        <h1>Satış Analizi</h1>
+        <p id="rangeText">@Model.StartDate.ToString("dd.MM.yyyy") – @Model.EndDate.ToString("dd.MM.yyyy") · geçen yılın aynı dönemiyle karşılaştırmalı</p>
+    </div>
+    <partial name="_DateFilter" model="(Model.StartDate, Model.EndDate)" />
+</div>
+
+<div id="sales">
+    <!-- ================= DÖNEM KARŞILAŞTIRMASI + TEKRAR ORANI ================= -->
+    <div class="row g-3 mb-3">
+        <div class="col-12 col-xl-8">
+            <div class="sp-card">
+                <div class="sp-card-head">
+                    <h2>Dönem Karşılaştırması</h2>
+                    <span id="compareText"></span>
+                </div>
+                <div class="row g-3" id="compareCards"></div>
+            </div>
+        </div>
+        <div class="col-12 col-xl-4">
+            <div class="sp-card">
+                <div class="sp-card-head">
+                    <h2>Tekrar Alışveriş Oranı</h2>
+                </div>
+                <div class="d-flex align-items-center gap-4">
+                    <div class="sp-ring" id="repeatRing"><div class="sp-ring-inner" id="repeatRate">–</div></div>
+                    <div>
+                        <div class="sp-kpi-label">Alışveriş yapan müşteri</div>
+                        <div class="fw-bold fs-5" id="buyers">–</div>
+                        <div class="sp-kpi-label mt-2">2+ sipariş veren</div>
+                        <div class="fw-bold fs-5" id="repeatBuyers">–</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= KATEGORİLERİN AYLIK PERFORMANSI ================= -->
+    <div class="sp-card mb-3" style="height:auto">
+        <div class="sp-card-head">
+            <h2>Kategorilerin Aylık Performansı</h2>
+            <span>Ana kategori grupları, aylık ciro</span>
+        </div>
+        <div class="sp-chart"><canvas id="categoryMonthlyChart"></canvas></div>
+    </div>
+
+    <!-- ================= EN İYİ 20 MÜŞTERİ ================= -->
+    <div class="sp-card mb-3" style="height:auto">
+        <div class="sp-card-head">
+            <h2>En Yüksek Ciro Sağlayan 20 Müşteri</h2>
+            <span>İptal ve iadeler hariç</span>
+        </div>
+        <div class="sp-table-wrap">
+            <table class="sp-table">
+                <thead>
+                    <tr>
+                        <th style="width:48px">#</th>
+                        <th>Müşteri</th>
+                        <th>Şehir</th>
+                        <th class="num">Sipariş</th>
+                        <th class="num">Ciro</th>
+                        <th class="num">Ort. sepet</th>
+                        <th class="num">Son sipariş</th>
+                    </tr>
+                </thead>
+                <tbody id="customerRows"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ================= ŞEHİRLER + ÜRÜNLER ================= -->
+    <div class="row g-3">
+        <div class="col-12 col-xl-5">
+            <div class="sp-card">
+                <div class="sp-card-head">
+                    <h2>En Çok Satış Yapılan Şehirler</h2>
+                </div>
+                <div class="sp-chart"><canvas id="cityChart"></canvas></div>
+            </div>
+        </div>
+        <div class="col-12 col-xl-7">
+            <div class="sp-card">
+                <div class="sp-card-head">
+                    <h2>En Yüksek Gelir Sağlayan Ürünler</h2>
+                </div>
+                <div class="sp-table-wrap">
+                    <table class="sp-table">
+                        <thead>
+                            <tr><th style="width:48px">#</th><th>Ürün</th><th class="num">Adet</th><th class="num">Ciro</th></tr>
+                        </thead>
+                        <tbody id="productRows"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let data = @Html.Raw(Json.Serialize(Model));
+
+        // Değişim yüzdesi: yukarı yeşil ok, aşağı pembe ok
+        function delta(v) {
+            if (v === null || v === undefined) return `<span class="sp-kpi-sub">karşılaştırma yok</span>`;
+            const up = v >= 0;
+            return `<span class="sp-delta ${up ? "up" : "down"}">${up ? "▲" : "▼"} ${SP.pct(Math.abs(v))}</span>`;
+        }
+
+        function percentChange(a, b) {
+            return a ? (b - a) / a * 100 : null;
+        }
+
+        function render(d) {
+            data = d;
+            document.getElementById("rangeText").textContent =
+                `${SP.date(d.startDate)} – ${SP.date(d.endDate)} · geçen yılın aynı dönemiyle karşılaştırmalı`;
+
+            // ---- Dönem karşılaştırması (B = seçilen dönem, A = bir yıl önce) ----
+            const c = d.comparison;
+            const prevStart = new Date(d.startDate); prevStart.setFullYear(prevStart.getFullYear() - 1);
+            const prevEnd = new Date(d.endDate); prevEnd.setFullYear(prevEnd.getFullYear() - 1);
+            document.getElementById("compareText").textContent = `Önceki: ${SP.date(prevStart)} – ${SP.date(prevEnd)}`;
+
+            const cards = c ? [
+                ["Sipariş", SP.num(c.b_OrderCount), SP.num(c.a_OrderCount), c.orderChangePercent, "tone-blue"],
+                ["Ciro", SP.compactMoney(c.b_Revenue), SP.compactMoney(c.a_Revenue), c.revenueChangePercent, "tone-mint"],
+                ["Müşteri", SP.num(c.b_CustomerCount), SP.num(c.a_CustomerCount), percentChange(c.a_CustomerCount, c.b_CustomerCount), "tone-lavender"],
+                ["Ort. sepet", SP.money(c.b_AverageBasket), SP.money(c.a_AverageBasket), percentChange(c.a_AverageBasket, c.b_AverageBasket), "tone-orange"]
+            ] : null;
+
+            document.getElementById("compareCards").innerHTML = cards
+                ? cards.map(([label, now, prev, chg, tone]) => `
+                    <div class="col-6 col-md-3">
+                        <div class="sp-kpi-label"><span class="sp-badge ${tone}">${label}</span></div>
+                        <div class="sp-kpi-value mt-2">${now}</div>
+                        <div>${delta(chg)}</div>
+                        <div class="sp-kpi-sub">önceki: ${prev}</div>
+                    </div>`).join("")
+                : `<div class="col-12 sp-empty">Önceki dönemde veri yok, karşılaştırma yapılamıyor.</div>`;
+
+            // ---- Tekrar alışveriş oranı (halka) ----
+            const rate = d.repeatRate.repeatRatePercent ?? 0;
+            document.getElementById("repeatRing").style.setProperty("--p", rate);
+            document.getElementById("repeatRate").textContent = SP.pct(d.repeatRate.repeatRatePercent);
+            document.getElementById("buyers").textContent = SP.num(d.repeatRate.buyers);
+            document.getElementById("repeatBuyers").textContent = SP.num(d.repeatRate.repeatBuyers);
+
+            // ---- Kategorilerin aylık performansı: her ana grup bir çizgi ----
+            const months = [...new Set(d.categoryMonthly.map(r => r.month))].sort();
+            const groups = [...new Set(d.categoryMonthly.map(r => r.groupName))];
+            SP.drawChart("categoryMonthlyChart", {
+                type: "line",
+                data: {
+                    labels: months.map(SP.monthLabel),
+                    datasets: groups.map((g, i) => ({
+                        label: g,
+                        data: months.map(m => d.categoryMonthly.find(r => r.month === m && r.groupName === g)?.revenue ?? 0),
+                        borderColor: SP.series[i % SP.series.length],
+                        backgroundColor: SP.series[i % SP.series.length],
+                        tension: .3, pointRadius: 2
+                    }))
+                },
+                options: {
+                    interaction: { mode: "index", intersect: false },
+                    plugins: { legend: { position: "bottom" },
+                               tooltip: { callbacks: { label: (x) => `${x.dataset.label}: ${SP.money(x.raw)}` } } },
+                    scales: { y: { ticks: { callback: (v) => SP.compactMoney(v) } }, x: { grid: { display: false } } }
+                }
+            });
+
+            // ---- En iyi 20 müşteri ----
+            document.getElementById("customerRows").innerHTML = d.topCustomers.map((m, i) => `
+                <tr>
+                    <td><span class="sp-rank">${i + 1}</span></td>
+                    <td class="fw-semibold">${SP.esc(m.customerName)}</td>
+                    <td class="text-muted">${SP.esc(m.cityName)}</td>
+                    <td class="num">${SP.num(m.orderCount)}</td>
+                    <td class="num fw-semibold">${SP.money(m.revenue)}</td>
+                    <td class="num">${SP.money(m.averageBasket)}</td>
+                    <td class="num">${SP.date(m.lastOrderDate)}</td>
+                </tr>`).join("") || `<tr><td colspan="7" class="sp-empty">Bu dönemde sipariş yok.</td></tr>`;
+
+            // ---- Şehirler ----
+            SP.drawChart("cityChart", {
+                type: "bar",
+                data: {
+                    labels: d.topCities.map(x => x.cityName),
+                    datasets: [{ label: "Ciro", data: d.topCities.map(x => x.revenue),
+                                 backgroundColor: SP.colors.blue + "cc", borderRadius: 6 }]
+                },
+                options: {
+                    indexAxis: "y",
+                    plugins: { legend: { display: false }, tooltip: { callbacks: { label: (x) => SP.money(x.raw) } } },
+                    scales: { x: { ticks: { callback: (v) => SP.compactMoney(v) } }, y: { grid: { display: false } } }
+                }
+            });
+
+            // ---- Ürünler (ciroya göre) ----
+            document.getElementById("productRows").innerHTML = d.topProducts.map((p, i) => `
+                <tr>
+                    <td><span class="sp-rank">${i + 1}</span></td>
+                    <td>${SP.esc(p.productName)}<div class="small text-muted">${SP.esc(p.categoryName)}</div></td>
+                    <td class="num">${SP.num(p.quantitySold)}</td>
+                    <td class="num fw-semibold">${SP.money(p.revenue)}</td>
+                </tr>`).join("") || `<tr><td colspan="4" class="sp-empty">Bu dönemde satış yok.</td></tr>`;
+        }
+
+        SP.bindDateFilter(document.getElementById("dateFilter"), async (start, end) => {
+            const box = document.getElementById("sales");
+            box.classList.add("sp-loading");
+            try {
+                render(await SP.getJson(`/Sales/Data?startDate=${start}&endDate=${end}`));
+            } catch (err) {
+                alert("Veri alınamadı: " + err.message);
+            } finally {
+                box.classList.remove("sp-loading");
+            }
+        });
+
+        render(data);
+    </script>
+}

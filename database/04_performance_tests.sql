@@ -187,10 +187,10 @@ GO
 /* =============================================================
    "ÖNCESİ"Nİ TEKRAR ÖLÇMEK İÇİN İNDEKSLERİ SİL
    (Seçip çalıştır; sonra 02_indexes.sql ile geri oluştur)
-
+*/
 DROP INDEX IF EXISTS IX_Orders_OrderDate            ON dbo.Orders;
 DROP INDEX IF EXISTS IX_Orders_CustomerId_OrderDate ON dbo.Orders;
 DROP INDEX IF EXISTS IX_OrderDetails_OrderId        ON dbo.OrderDetails;
 DROP INDEX IF EXISTS UX_Payments_OrderId            ON dbo.Payments;
 DROP INDEX IF EXISTS IX_Products_CategoryId         ON dbo.Products;
-   ============================================================= */
+   ============================================================= 

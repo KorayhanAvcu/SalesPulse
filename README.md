@@ -37,6 +37,22 @@ Asıl hedef sadece veriyi listelemek değil; **verimli SQL sorguları, Dapper il
 
 ---
 
+## Temel kavramlar (kısaca)
+
+**İndeks nedir?** Kitabın arkasındaki dizin gibidir. 1.000 sayfalık bir kitapta "Dapper" kelimesini aramak için her sayfayı çevirmek yerine dizinde "D" harfine gidip "s. 245"e atlarsın. Veritabanında da indeks, bir kolona göre **sıralı ayrı bir liste** tutar. Örneğin `IX_Orders_OrderDate` siparişleri tarihe göre sıralı tutar; "2026'daki siparişler" denince SQL Server doğrudan 2026'nın başına atlar (**Seek**), 2 milyon satırın hepsine bakmaz (**Scan**). Bedeli: biraz disk alanı kaplar ve yeni kayıt eklemeyi azıcık yavaşlatır.
+
+**Stored procedure (SP) nedir?** Veritabanına kaydedilmiş, adı olan **hazır bir SQL tarifi**dir. Restoranda tarifi baştan anlatmak yerine "Karnıyarık lütfen" demek gibi. Uygulama uzun SQL yazmaz, sadece adını ve parametrelerini söyler:
+```sql
+EXEC dbo.sp_Dashboard_Kpis @StartDate = '2026-01-01', @EndDate = '2026-10-31';
+```
+Faydaları: SQL tek yerde durur; değiştirmek için C# koduna dokunmak gerekmez; parametreler ayrı gönderildiği için SQL injection yapılamaz.
+
+**Dapper nedir?** SQL'den gelen satırları, kolon adlarına bakarak C# sınıflarına (DTO) otomatik yerleştiren küçük ve hızlı bir kütüphane. `TotalOrders` kolonu → `KpiDto.TotalOrders` property'si.
+
+**DTO nedir?** Sadece veri taşıyan basit sınıf. SP'nin döndürdüğü her kolon için bir property içerir.
+
+---
+
 ## Kullanılan teknolojiler
 
 | Teknoloji | Neden |

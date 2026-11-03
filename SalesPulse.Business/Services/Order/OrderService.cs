@@ -1,5 +1,6 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text;
+using SalesPulse.DataAccess.Repositories.Lookup;
 using SalesPulse.DataAccess.Repositories.Order;
 using SalesPulse.Entity.Dtos;
 
@@ -17,10 +18,18 @@ public class OrderService : IOrderService
     };
 
     private readonly IOrderRepository _orderRepository;
+    private readonly ILookupRepository _lookupRepository;
 
-    public OrderService(IOrderRepository orderRepository)
+    public OrderService(IOrderRepository orderRepository, ILookupRepository lookupRepository)
     {
         _orderRepository = orderRepository;
+        _lookupRepository = lookupRepository;
+    }
+
+    // Filtre açılır listeleri (şehirler, durumlar)
+    public Task<OrderLookupsDto> GetLookupsAsync()
+    {
+        return _lookupRepository.GetOrderLookupsAsync();
     }
 
     public Task<PagedResult<OrderListItemDto>> SearchAsync(OrderSearchFilter filter)

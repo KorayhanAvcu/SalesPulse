@@ -1,0 +1,14 @@
+@model (DateTime Start, DateTime End)
+@* Ortak tarih filtresi: hazır aralıklar + başlangıç/bitiş tarihi. Davranışı site.js -> SP.bindDateFilter *@
+<form class="sp-filter" id="dateFilter" data-data-end="2026-10-31">
+    <div class="sp-presets">
+        <button type="button" class="sp-chip" data-preset="30d">30 gün</button>
+        <button type="button" class="sp-chip" data-preset="3m">3 ay</button>
+        <button type="button" class="sp-chip active" data-preset="12m">12 ay</button>
+        <button type="button" class="sp-chip" data-preset="ytd">Bu yıl</button>
+    </div>
+    <input type="date" name="startDate" value="@Model.Start.ToString("yyyy-MM-dd")" min="2024-01-01" max="2026-10-31" aria-label="Başlangıç" />
+    <span class="text-muted">–</span>
+    <input type="date" name="endDate" value="@Model.End.ToString("yyyy-MM-dd")" min="2024-01-01" max="2026-10-31" aria-label="Bitiş" />
+    <button type="submit" class="btn-sp">Uygula</button>
+</form>

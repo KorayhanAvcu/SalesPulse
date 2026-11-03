@@ -3,6 +3,7 @@ using SalesPulse.Business.Services.Order;
 using SalesPulse.Business.Services.Sales;
 using SalesPulse.DataAccess.Connection;
 using SalesPulse.DataAccess.Repositories.Dashboard;
+using SalesPulse.DataAccess.Repositories.Lookup;
 using SalesPulse.DataAccess.Repositories.Order;
 using SalesPulse.DataAccess.Repositories.Sales;
 
@@ -18,6 +19,7 @@ builder.Services.AddSingleton<IDbConnectionFactory>(new SqlConnectionFactory(con
 builder.Services.AddScoped<IDashboardRepository, DashboardRepository>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<ISalesRepository, SalesRepository>();
+builder.Services.AddScoped<ILookupRepository, LookupRepository>();
 
 // ---- İş katmanı (Business) ----
 builder.Services.AddScoped<IDashboardService, DashboardService>();

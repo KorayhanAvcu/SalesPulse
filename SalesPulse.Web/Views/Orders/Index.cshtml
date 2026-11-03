@@ -1,0 +1,283 @@
+@model OrderLookupsDto
+@{
+    ViewData["Title"] = "Sipariş Yönetimi";
+}
+
+<div class="sp-page-head">
+    <div>
+        <h1>Sipariş Yönetimi</h1>
+        <p>2 milyon+ sipariş içinde ara, filtrele, sırala. Satıra tıklayınca detay açılır.</p>
+    </div>
+    <button type="button" class="btn-sp-light d-inline-flex align-items-center gap-2" id="exportBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+        CSV indir
+    </button>
+</div>
+
+<!-- ================= FİLTRELER ================= -->
+<form class="sp-card mb-3" id="filterForm" style="height:auto">
+    <div class="sp-filters-grid">
+        <div class="span-2">
+            <label for="fSearch">Sipariş no / müşteri</label>
+            <input class="sp-input" id="fSearch" name="search" placeholder="Örn. 1500000 veya Yılmaz" />
+        </div>
+        <div>
+            <label for="fStart">Başlangıç</label>
+            <input class="sp-input" type="date" id="fStart" name="startDate" min="2024-01-01" max="2026-10-31" />
+        </div>
+        <div>
+            <label for="fEnd">Bitiş</label>
+            <input class="sp-input" type="date" id="fEnd" name="endDate" min="2024-01-01" max="2026-10-31" />
+        </div>
+        <div>
+            <label for="fCity">Şehir</label>
+            <select class="sp-input" id="fCity" name="cityId">
+                <option value="">Tümü</option>
+                @foreach (var c in Model.Cities)
+                {
+                    <option value="@c.Id">@c.Name</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label for="fStatus">Durum</label>
+            <select class="sp-input" id="fStatus" name="statusId">
+                <option value="">Tümü</option>
+                @foreach (var s in Model.Statuses)
+                {
+                    <option value="@s.Id">@s.Name</option>
+                }
+            </select>
+        </div>
+        <div class="d-flex gap-2">
+            <div>
+                <label for="fMin">Min ₺</label>
+                <input class="sp-input" type="number" min="0" id="fMin" name="minAmount" />
+            </div>
+            <div>
+                <label for="fMax">Maks ₺</label>
+                <input class="sp-input" type="number" min="0" id="fMax" name="maxAmount" />
+            </div>
+        </div>
+    </div>
+    <div class="d-flex gap-2 justify-content-end mt-3">
+        <button type="button" class="btn-sp-light" id="clearBtn">Temizle</button>
+        <button type="submit" class="btn-sp">Filtrele</button>
+    </div>
+</form>
+
+<!-- ================= TABLO ================= -->
+<div class="sp-card" id="tableCard" style="height:auto">
+    <div class="sp-table-wrap">
+        <table class="sp-table">
+            <thead>
+                <tr>
+                    <th class="sortable" data-sort="OrderId">Sipariş No <span class="sort-arrow">↕</span></th>
+                    <th class="sortable" data-sort="Customer">Müşteri <span class="sort-arrow">↕</span></th>
+                    <th class="sortable" data-sort="City">Şehir <span class="sort-arrow">↕</span></th>
+                    <th class="sortable" data-sort="OrderDate">Tarih <span class="sort-arrow">↕</span></th>
+                    <th class="sortable num" data-sort="TotalAmount">Tutar <span class="sort-arrow">↕</span></th>
+                    <th>Ödeme</th>
+                    <th class="sortable" data-sort="Status">Durum <span class="sort-arrow">↕</span></th>
+                </tr>
+            </thead>
+            <tbody id="orderRows">
+                <tr><td colspan="7" class="sp-empty">Yükleniyor…</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="sp-pager">
+        <div class="sp-pager-info" id="pagerInfo"></div>
+        <div class="d-flex align-items-center gap-3">
+            <select class="sp-input" id="pageSize" style="width:auto;height:34px" aria-label="Sayfa boyutu">
+                <option value="10">10 / sayfa</option>
+                <option value="25" selected>25 / sayfa</option>
+                <option value="50">50 / sayfa</option>
+                <option value="100">100 / sayfa</option>
+            </select>
+            <div class="sp-pages" id="pages"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ================= DETAY MODALI ================= -->
+<div class="modal fade" id="detailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title" id="detailTitle">Sipariş</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+            </div>
+            <div class="modal-body" id="detailBody"></div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // ---- Sayfanın durumu: filtreler + sıralama + sayfa ----
+        const state = { sortColumn: "OrderDate", sortDir: "DESC", page: 1, pageSize: 25 };
+        const form = document.getElementById("filterForm");
+
+        // Üst bardaki arama kutusundan gelindiyse (/Orders?search=...) kutuyu doldur
+        const urlSearch = new URLSearchParams(location.search).get("search");
+        if (urlSearch) form.search.value = urlSearch;
+
+        // Filtreleri + sıralamayı adres parametrelerine çevir (?cityId=34&page=2...)
+        function buildQuery(includePaging = true) {
+            const p = new URLSearchParams();
+            for (const [key, value] of new FormData(form)) {
+                if (String(value).trim() !== "") p.set(key, String(value).trim());
+            }
+            p.set("sortColumn", state.sortColumn);
+            p.set("sortDir", state.sortDir);
+            if (includePaging) { p.set("page", state.page); p.set("pageSize", state.pageSize); }
+            return p.toString();
+        }
+
+        // ---- Tabloyu sunucudan yükle (/Orders/List) ----
+        async function load() {
+            const card = document.getElementById("tableCard");
+            card.classList.add("sp-loading");
+            try {
+                const result = await SP.getJson("/Orders/List?" + buildQuery());
+                renderRows(result.items);
+                renderPager(result);
+            } catch (err) {
+                document.getElementById("orderRows").innerHTML =
+                    `<tr><td colspan="7" class="sp-empty">Veri alınamadı: ${SP.esc(err.message)}</td></tr>`;
+            } finally {
+                card.classList.remove("sp-loading");
+            }
+        }
+
+        function renderRows(items) {
+            const tbody = document.getElementById("orderRows");
+            if (items.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="sp-empty">Filtrelere uyan sipariş bulunamadı.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = items.map(o => `
+                <tr class="clickable" data-id="${o.orderId}">
+                    <td class="fw-semibold">#${o.orderId}</td>
+                    <td>${SP.esc(o.customerName)}</td>
+                    <td>${SP.esc(o.cityName)}</td>
+                    <td>${SP.dateTime(o.orderDate)}</td>
+                    <td class="num">${SP.money2(o.totalAmount)}</td>
+                    <td class="text-muted">${SP.esc(o.paymentMethod ?? "—")}</td>
+                    <td>${SP.statusBadge(o.statusId, o.statusName)}</td>
+                </tr>`).join("");
+        }
+
+        // ---- Sayfalama: 1 … 4 5 [6] 7 8 … 142 ----
+        function renderPager(r) {
+            const from = r.totalCount === 0 ? 0 : (r.page - 1) * r.pageSize + 1;
+            const to = Math.min(r.page * r.pageSize, r.totalCount);
+            document.getElementById("pagerInfo").textContent =
+                `${SP.num(r.totalCount)} kayıttan ${SP.num(from)}–${SP.num(to)} arası`;
+
+            const total = r.totalPages, cur = r.page;
+            const nums = new Set([1, total, cur - 2, cur - 1, cur, cur + 1, cur + 2].filter(n => n >= 1 && n <= total));
+            const sorted = [...nums].sort((a, b) => a - b);
+
+            let html = `<button data-page="${cur - 1}" ${cur <= 1 ? "disabled" : ""} aria-label="Önceki">‹</button>`;
+            sorted.forEach((n, i) => {
+                if (i > 0 && n - sorted[i - 1] > 1) html += `<span class="gap">…</span>`;
+                html += `<button data-page="${n}" class="${n === cur ? "active" : ""}">${SP.num(n)}</button>`;
+            });
+            html += `<button data-page="${cur + 1}" ${cur >= total ? "disabled" : ""} aria-label="Sonraki">›</button>`;
+            document.getElementById("pages").innerHTML = total > 0 ? html : "";
+        }
+
+        document.getElementById("pages").addEventListener("click", (e) => {
+            const btn = e.target.closest("button[data-page]");
+            if (!btn || btn.disabled) return;
+            state.page = Number(btn.dataset.page);
+            load();
+        });
+
+        document.getElementById("pageSize").addEventListener("change", (e) => {
+            state.pageSize = Number(e.target.value);
+            state.page = 1;
+            load();
+        });
+
+        // ---- Kolon başlığına tıklayınca sırala (aynı kolona tekrar tıklayınca yön değişir) ----
+        function markSorted() {
+            document.querySelectorAll("th.sortable").forEach(th => {
+                const on = th.dataset.sort === state.sortColumn;
+                th.classList.toggle("sorted", on);
+                th.querySelector(".sort-arrow").textContent = on ? (state.sortDir === "ASC" ? "↑" : "↓") : "↕";
+            });
+        }
+
+        document.querySelectorAll("th.sortable").forEach(th => {
+            th.addEventListener("click", () => {
+                if (state.sortColumn === th.dataset.sort) {
+                    state.sortDir = state.sortDir === "ASC" ? "DESC" : "ASC";
+                } else {
+                    state.sortColumn = th.dataset.sort;
+                    state.sortDir = th.dataset.sort === "OrderDate" || th.dataset.sort === "TotalAmount" ? "DESC" : "ASC";
+                }
+                state.page = 1;
+                markSorted();
+                load();
+            });
+        });
+
+        // ---- Filtrele / Temizle ----
+        form.addEventListener("submit", (e) => { e.preventDefault(); state.page = 1; load(); });
+        document.getElementById("clearBtn").addEventListener("click", () => { form.reset(); state.page = 1; load(); });
+
+        // ---- CSV: aynı filtrelerle /Orders/Export (en fazla 10.000 satır) ----
+        document.getElementById("exportBtn").addEventListener("click", () => {
+            window.location.href = "/Orders/Export?" + buildQuery(false);
+        });
+
+        // ---- Satıra tıklayınca detay modalı (/Orders/Detail/{id}) ----
+        const modal = new bootstrap.Modal(document.getElementById("detailModal"));
+
+        document.getElementById("orderRows").addEventListener("click", async (e) => {
+            const row = e.target.closest("tr[data-id]");
+            if (!row) return;
+
+            document.getElementById("detailTitle").textContent = `Sipariş #${row.dataset.id}`;
+            document.getElementById("detailBody").innerHTML = `<div class="sp-empty">Yükleniyor…</div>`;
+            modal.show();
+
+            try {
+                const d = await SP.getJson(`/Orders/Detail/${row.dataset.id}`);
+                document.getElementById("detailBody").innerHTML = `
+                    <div class="sp-detail-grid">
+                        <div><small>Müşteri</small><strong>${SP.esc(d.customerName)}</strong><br><span class="small text-muted">${SP.esc(d.email)}</span></div>
+                        <div><small>Teslimat şehri</small><strong>${SP.esc(d.shippingCity)}</strong></div>
+                        <div><small>Sipariş tarihi</small><strong>${SP.dateTime(d.orderDate)}</strong></div>
+                        <div><small>Durum</small><strong>${SP.esc(d.statusName)}</strong></div>
+                        <div><small>Ödeme</small><strong>${SP.esc(d.paymentMethod ?? "—")}</strong>${d.installmentCount > 1 ? ` <span class="small text-muted">(${d.installmentCount} taksit)</span>` : ""}</div>
+                        <div><small>Ödeme tarihi</small><strong>${SP.dateTime(d.paymentDate)}</strong></div>
+                    </div>
+                    <table class="sp-table">
+                        <thead><tr><th>Ürün</th><th>Kategori</th><th class="num">Adet</th><th class="num">Birim fiyat</th><th class="num">Tutar</th></tr></thead>
+                        <tbody>
+                            ${d.lines.map(l => `
+                                <tr>
+                                    <td>${SP.esc(l.productName)}</td>
+                                    <td class="text-muted">${SP.esc(l.categoryName)}</td>
+                                    <td class="num">${l.quantity}</td>
+                                    <td class="num">${SP.money2(l.unitPrice)}</td>
+                                    <td class="num">${SP.money2(l.lineTotal)}</td>
+                                </tr>`).join("")}
+                            <tr><td colspan="4" class="num fw-semibold">Toplam</td><td class="num fw-bold">${SP.money2(d.totalAmount)}</td></tr>
+                        </tbody>
+                    </table>`;
+            } catch (err) {
+                document.getElementById("detailBody").innerHTML =
+                    `<div class="sp-empty">Detay alınamadı: ${SP.esc(err.message)}</div>`;
+            }
+        });
+
+        markSorted();
+        load();
+    </script>
+}

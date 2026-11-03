@@ -25,25 +25,28 @@ public class SalesService : ISalesService
         var aStart = start.AddYears(-1);
         var aEnd = end.AddYears(-1);
 
+        // 1) HAFİF sorgular (sadece Orders): aynı anda
         var customersTask  = _salesRepository.GetTopCustomersAsync(start, end, 20);
-        var categoryTask   = _salesRepository.GetCategoryMonthlyAsync(start, end);
         var repeatTask     = _salesRepository.GetRepeatCustomerRateAsync(start, end);
         var comparisonTask = _salesRepository.GetPeriodComparisonAsync(aStart, aEnd, start, end);
         var citiesTask     = _dashboardRepository.GetTopCitiesAsync(start, end, 10);
-        var productsTask   = _dashboardRepository.GetTopProductsAsync(start, end, 10, "revenue");
 
-        await Task.WhenAll(customersTask, categoryTask, repeatTask, comparisonTask, citiesTask, productsTask);
+        await Task.WhenAll(customersTask, repeatTask, comparisonTask, citiesTask);
+
+        // 2) AĞIR sorgular (OrderDetails JOIN'i): sırayla
+        var categoryMonthly = await _salesRepository.GetCategoryMonthlyAsync(start, end);
+        var topProducts     = await _dashboardRepository.GetTopProductsAsync(start, end, 10, "revenue");
 
         return new SalesIntelligenceDto
         {
             StartDate = start,
             EndDate = end,
             TopCustomers = await customersTask,
-            CategoryMonthly = await categoryTask,
             RepeatRate = await repeatTask,
             Comparison = await comparisonTask,
             TopCities = await citiesTask,
-            TopProducts = await productsTask
+            CategoryMonthly = categoryMonthly,
+            TopProducts = topProducts
         };
     }
 }

@@ -7,6 +7,9 @@ namespace SalesPulse.DataAccess.Repositories.Sales
 {
     public class SalesRepository : ISalesRepository
     {
+        // Rapor sorguları büyük veri üzerinde çalışır: varsayılan 30 sn yerine 120 sn bekle
+        private const int CommandTimeoutSeconds = 120;
+
         private readonly IDbConnectionFactory _connectionFactory;
 
         public SalesRepository(IDbConnectionFactory connectionFactory)
@@ -21,6 +24,7 @@ namespace SalesPulse.DataAccess.Repositories.Sales
             var rows = await connection.QueryAsync<TopCustomerDto>(
                 "dbo.sp_Sales_TopCustomers",
                 new { StartDate = startDate, EndDate = endDate, Top = top },
+                commandTimeout: CommandTimeoutSeconds,
                 commandType: CommandType.StoredProcedure);
 
             return rows.ToList();
@@ -33,6 +37,7 @@ namespace SalesPulse.DataAccess.Repositories.Sales
             var rows = await connection.QueryAsync<CategoryMonthlyDto>(
                 "dbo.sp_Sales_CategoryMonthly",
                 new { StartDate = startDate, EndDate = endDate },
+                commandTimeout: CommandTimeoutSeconds,
                 commandType: CommandType.StoredProcedure);
 
             return rows.ToList();
@@ -45,6 +50,7 @@ namespace SalesPulse.DataAccess.Repositories.Sales
             return await connection.QueryFirstAsync<RepeatCustomerRateDto>(
                 "dbo.sp_Sales_RepeatCustomerRate",
                 new { StartDate = startDate, EndDate = endDate },
+                commandTimeout: CommandTimeoutSeconds,
                 commandType: CommandType.StoredProcedure);
         }
 
@@ -56,6 +62,7 @@ namespace SalesPulse.DataAccess.Repositories.Sales
             return await connection.QueryFirstOrDefaultAsync<PeriodComparisonDto>(
                 "dbo.sp_Sales_PeriodComparison",
                 new { AStartDate = aStart, AEndDate = aEnd, BStartDate = bStart, BEndDate = bEnd },
+                commandTimeout: CommandTimeoutSeconds,
                 commandType: CommandType.StoredProcedure);
         }
     }

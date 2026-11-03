@@ -13,10 +13,11 @@ public class OrdersController : Controller
         _orderService = orderService;
     }
 
-    // GET /Orders -> Order Explorer sayfası
-    public IActionResult Index()
+    // GET /Orders -> Order Explorer sayfası (açılır listeler için şehir/durum listesini gönderir)
+    public async Task<IActionResult> Index()
     {
-        return View();
+        var lookups = await _orderService.GetLookupsAsync();
+        return View(lookups);
     }
 
     // GET /Orders/List?cityId=34&statusId=4&page=2 -> tablo verisi (JSON)

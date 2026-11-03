@@ -12,6 +12,9 @@ namespace SalesPulse.DataAccess.Repositories.Dashboard
 {
     public class DashboardRepository : IDashboardRepository
     {
+        // Rapor sorguları büyük veri üzerinde çalışır: varsayılan 30 sn yerine 120 sn bekle
+        private const int CommandTimeoutSeconds = 120;
+
         private readonly IDbConnectionFactory _connectionFactory;
 
         public DashboardRepository(IDbConnectionFactory connectionFactory)
@@ -24,7 +27,8 @@ namespace SalesPulse.DataAccess.Repositories.Dashboard
             return await connection.QueryFirstAsync<KpiDto>(
             "dbo.sp_Dashboard_Kpis",
             new { StartDate = startDate, EndDate = endDate },
-            commandType: CommandType.StoredProcedure);
+            commandTimeout: CommandTimeoutSeconds,
+                commandType: CommandType.StoredProcedure);
         }
 
         public async Task<List<MonthlyTrendDto>> GetMonthlyTrendAsync(DateTime endDate)
@@ -34,6 +38,7 @@ namespace SalesPulse.DataAccess.Repositories.Dashboard
             var rows = await connection.QueryAsync<MonthlyTrendDto>(
                 "dbo.sp_Dashboard_MonthlyTrend",
                 new { EndDate = endDate },
+                commandTimeout: CommandTimeoutSeconds,
                 commandType: CommandType.StoredProcedure);
 
             return rows.ToList();
@@ -46,6 +51,7 @@ namespace SalesPulse.DataAccess.Repositories.Dashboard
             var rows = await connection.QueryAsync<StatusDistributionDto>(
                 "dbo.sp_Dashboard_StatusDistribution",
                 new { StartDate = startDate, EndDate = endDate },
+                commandTimeout: CommandTimeoutSeconds,
                 commandType: CommandType.StoredProcedure);
 
             return rows.ToList();
@@ -58,6 +64,7 @@ namespace SalesPulse.DataAccess.Repositories.Dashboard
             var rows = await connection.QueryAsync<TopCategoryDto>(
                 "dbo.sp_Dashboard_TopCategories",
                 new { StartDate = startDate, EndDate = endDate, Top = top },
+                commandTimeout: CommandTimeoutSeconds,
                 commandType: CommandType.StoredProcedure);
 
             return rows.ToList();
@@ -71,6 +78,7 @@ namespace SalesPulse.DataAccess.Repositories.Dashboard
             var rows = await connection.QueryAsync<TopCityDto>(
                 "dbo.sp_Dashboard_TopCities",
                 new { StartDate = startDate, EndDate = endDate, Top = top },
+                commandTimeout: CommandTimeoutSeconds,
                 commandType: CommandType.StoredProcedure);
 
             return rows.ToList();
@@ -83,6 +91,7 @@ namespace SalesPulse.DataAccess.Repositories.Dashboard
             var rows = await connection.QueryAsync<TopProductDto>(
                 "dbo.sp_Dashboard_TopProducts",
                 new { StartDate = startDate, EndDate = endDate, Top = top, OrderBy = orderBy },
+                commandTimeout: CommandTimeoutSeconds,
                 commandType: CommandType.StoredProcedure);
 
             return rows.ToList();

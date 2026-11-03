@@ -1,0 +1,276 @@
+@model DashboardDto
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="sp-page-head">
+    <div>
+        <h1>Dashboard</h1>
+        <p id="rangeText">@Model.StartDate.ToString("dd.MM.yyyy") – @Model.EndDate.ToString("dd.MM.yyyy") arası satış özeti</p>
+    </div>
+    <partial name="_DateFilter" model="(Model.StartDate, Model.EndDate)" />
+</div>
+
+<div id="dashboard">
+    <!-- ================= 4 KPI KARTI ================= -->
+    <div class="row g-3 mb-3">
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="sp-card sp-kpi">
+                <div class="sp-kpi-icon tone-blue">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" /></svg>
+                </div>
+                <div>
+                    <div class="sp-kpi-label">Toplam Sipariş</div>
+                    <div class="sp-kpi-value" id="kpiOrders">–</div>
+                    <div class="sp-kpi-sub">iptal ve iadeler dahil</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="sp-card sp-kpi">
+                <div class="sp-kpi-icon tone-mint">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
+                </div>
+                <div>
+                    <div class="sp-kpi-label">Toplam Ciro</div>
+                    <div class="sp-kpi-value" id="kpiRevenue">–</div>
+                    <div class="sp-kpi-sub">iptal ve iadeler hariç</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="sp-card sp-kpi">
+                <div class="sp-kpi-icon tone-lavender">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
+                </div>
+                <div>
+                    <div class="sp-kpi-label">Toplam Müşteri</div>
+                    <div class="sp-kpi-value" id="kpiCustomers">–</div>
+                    <div class="sp-kpi-sub">bu dönemde sipariş veren</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="sp-card sp-kpi">
+                <div class="sp-kpi-icon tone-orange">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" /></svg>
+                </div>
+                <div>
+                    <div class="sp-kpi-label">Ortalama Sepet</div>
+                    <div class="sp-kpi-value" id="kpiBasket">–</div>
+                    <div class="sp-kpi-sub">ciro / geçerli sipariş</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= TREND + DURUMLAR ================= -->
+    <div class="row g-3 mb-3">
+        <div class="col-12 col-xl-8">
+            <div class="sp-card">
+                <div class="sp-card-head">
+                    <h2>Aylık Satış Eğilimi</h2>
+                    <span>Bitiş tarihine göre son 12 ay</span>
+                </div>
+                <div class="sp-chart"><canvas id="trendChart"></canvas></div>
+            </div>
+        </div>
+        <div class="col-12 col-xl-4">
+            <div class="sp-card">
+                <div class="sp-card-head">
+                    <h2>Sipariş Durumları</h2>
+                </div>
+                <div class="sp-chart"><canvas id="statusChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= KATEGORİ + ŞEHİR ================= -->
+    <div class="row g-3 mb-3">
+        <div class="col-12 col-xl-6">
+            <div class="sp-card">
+                <div class="sp-card-head">
+                    <h2>Kategori Performansı</h2>
+                    <span>Ciroya göre ilk 10</span>
+                </div>
+                <div class="sp-chart"><canvas id="categoryChart"></canvas></div>
+            </div>
+        </div>
+        <div class="col-12 col-xl-6">
+            <div class="sp-card">
+                <div class="sp-card-head">
+                    <h2>Bölgesel Dağılım</h2>
+                    <span>En çok satış yapılan 10 şehir</span>
+                </div>
+                <div class="sp-chart"><canvas id="cityChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= EN ÇOK SATAN ÜRÜNLER ================= -->
+    <div class="sp-card">
+        <div class="sp-card-head">
+            <h2>En Çok Satan Ürünler</h2>
+            <div class="sp-segment" id="productToggle">
+                <button type="button" class="active" data-mode="quantity">Adete göre</button>
+                <button type="button" data-mode="revenue">Ciroya göre</button>
+            </div>
+        </div>
+        <div class="sp-table-wrap">
+            <table class="sp-table">
+                <thead>
+                    <tr>
+                        <th style="width:48px">#</th>
+                        <th>Ürün</th>
+                        <th>Kategori</th>
+                        <th class="num">Satış Adedi</th>
+                        <th class="num">Ciro</th>
+                    </tr>
+                </thead>
+                <tbody id="productRows"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Sayfa ilk açıldığında veri sunucuda hazırlanıp buraya JSON olarak gömülüyor.
+        // Tarih filtresi değişince /Dashboard/Data adresinden yenisi alınıyor.
+        let data = @Html.Raw(Json.Serialize(Model));
+        let productMode = "quantity";
+
+        function render(d) {
+            data = d;
+
+            // ---- KPI kartları ----
+            document.getElementById("kpiOrders").textContent = SP.num(d.kpis.totalOrders);
+            document.getElementById("kpiRevenue").textContent = SP.compactMoney(d.kpis.totalRevenue);
+            document.getElementById("kpiRevenue").title = SP.money2(d.kpis.totalRevenue);
+            document.getElementById("kpiCustomers").textContent = SP.num(d.kpis.totalCustomers);
+            document.getElementById("kpiBasket").textContent = SP.money(d.kpis.averageBasket);
+            document.getElementById("rangeText").textContent =
+                `${SP.date(d.startDate)} – ${SP.date(d.endDate)} arası satış özeti`;
+
+            // ---- Aylık trend: ciro (sütun) + sipariş sayısı (çizgi), iki ayrı eksen ----
+            SP.drawChart("trendChart", {
+                data: {
+                    labels: d.monthlyTrend.map(m => SP.monthLabel(m.month)),
+                    datasets: [
+                        { type: "bar", label: "Ciro", data: d.monthlyTrend.map(m => m.revenue),
+                          backgroundColor: SP.colors.blue + "cc", borderRadius: 6, yAxisID: "y" },
+                        { type: "line", label: "Sipariş", data: d.monthlyTrend.map(m => m.orderCount),
+                          borderColor: SP.colors.orange, backgroundColor: SP.colors.orange,
+                          tension: .35, pointRadius: 3, yAxisID: "y1" }
+                    ]
+                },
+                options: {
+                    interaction: { mode: "index", intersect: false },
+                    plugins: { tooltip: { callbacks: { label: (c) => c.dataset.label + ": " +
+                        (c.dataset.yAxisID === "y" ? SP.money(c.raw) : SP.num(c.raw)) } } },
+                    scales: {
+                        y: { ticks: { callback: (v) => SP.compactMoney(v) }, grid: { drawTicks: false } },
+                        y1: { position: "right", grid: { display: false }, ticks: { callback: (v) => SP.num(v) } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // ---- Sipariş durumları: halka grafik ----
+            const statusColors = { 1: SP.colors.lavender, 2: SP.colors.orange, 3: SP.colors.blue,
+                                   4: SP.colors.mint, 5: SP.colors.pink, 6: SP.colors.gray };
+            SP.drawChart("statusChart", {
+                type: "doughnut",
+                data: {
+                    labels: d.statusDistribution.map(s => s.statusName),
+                    datasets: [{ data: d.statusDistribution.map(s => s.orderCount),
+                                 backgroundColor: d.statusDistribution.map(s => statusColors[s.statusId]),
+                                 borderWidth: 2, borderColor: "#fff" }]
+                },
+                options: {
+                    cutout: "62%",
+                    plugins: {
+                        legend: { position: "bottom" },
+                        tooltip: { callbacks: { label: (c) => {
+                            const total = c.dataset.data.reduce((a, b) => a + b, 0);
+                            return `${c.label}: ${SP.num(c.raw)} (%${(c.raw / total * 100).toFixed(1)})`;
+                        } } }
+                    }
+                }
+            });
+
+            // ---- Kategoriler: yatay sütun ----
+            SP.drawChart("categoryChart", {
+                type: "bar",
+                data: {
+                    labels: d.topCategories.map(c => c.categoryName),
+                    datasets: [{ label: "Ciro", data: d.topCategories.map(c => c.revenue),
+                                 backgroundColor: SP.colors.lavender + "cc", borderRadius: 6 }]
+                },
+                options: {
+                    indexAxis: "y",
+                    plugins: { legend: { display: false },
+                               tooltip: { callbacks: { label: (c) => SP.money(c.raw),
+                                   afterLabel: (c) => d.topCategories[c.dataIndex].groupName ?? "" } } },
+                    scales: { x: { ticks: { callback: (v) => SP.compactMoney(v) } }, y: { grid: { display: false } } }
+                }
+            });
+
+            // ---- Şehirler: dikey sütun ----
+            SP.drawChart("cityChart", {
+                type: "bar",
+                data: {
+                    labels: d.topCities.map(c => c.cityName),
+                    datasets: [{ label: "Ciro", data: d.topCities.map(c => c.revenue),
+                                 backgroundColor: SP.colors.mint + "cc", borderRadius: 6 }]
+                },
+                options: {
+                    plugins: { legend: { display: false },
+                               tooltip: { callbacks: { label: (c) => SP.money(c.raw),
+                                   afterLabel: (c) => SP.num(d.topCities[c.dataIndex].orderCount) + " sipariş" } } },
+                    scales: { y: { ticks: { callback: (v) => SP.compactMoney(v) } }, x: { grid: { display: false } } }
+                }
+            });
+
+            renderProducts();
+        }
+
+        // ---- Ürün tablosu (Adet / Ciro geçişi) ----
+        function renderProducts() {
+            const list = productMode === "quantity" ? data.topProductsByQuantity : data.topProductsByRevenue;
+            document.getElementById("productRows").innerHTML = list.length === 0
+                ? `<tr><td colspan="5" class="sp-empty">Bu dönemde satış yok.</td></tr>`
+                : list.map((p, i) => `
+                    <tr>
+                        <td><span class="sp-rank">${i + 1}</span></td>
+                        <td>${SP.esc(p.productName)}</td>
+                        <td class="text-muted">${SP.esc(p.categoryName)}</td>
+                        <td class="num">${SP.num(p.quantitySold)}</td>
+                        <td class="num">${SP.money(p.revenue)}</td>
+                    </tr>`).join("");
+        }
+
+        document.querySelectorAll("#productToggle button").forEach((btn) => {
+            btn.addEventListener("click", () => {
+                productMode = btn.dataset.mode;
+                document.querySelectorAll("#productToggle button").forEach(b => b.classList.toggle("active", b === btn));
+                renderProducts();
+            });
+        });
+
+        // ---- Tarih filtresi: veritabanından yeniden yükle ----
+        SP.bindDateFilter(document.getElementById("dateFilter"), async (start, end) => {
+            const box = document.getElementById("dashboard");
+            box.classList.add("sp-loading");
+            try {
+                render(await SP.getJson(`/Dashboard/Data?startDate=${start}&endDate=${end}`));
+            } catch (err) {
+                alert("Veri alınamadı: " + err.message);
+            } finally {
+                box.classList.remove("sp-loading");
+            }
+        });
+
+        render(data);
+    </script>
+}
