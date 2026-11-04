@@ -127,6 +127,7 @@ database/04_performance_tests.sql   → İndeks YOKKEN çalıştır, süreleri k
 database/02_indexes.sql             → 7 indeks (5 rowstore + 2 columnstore)
 database/03_stored_procedures.sql   → 13 stored procedure
 database/04_performance_tests.sql   → Tekrar çalıştır ("sonrası")
+database/06_server_settings.sql     → SQL Server bellek ayarı (min 1 GB) — raporların zaman aşımına uğramaması için
 ```
 
 ### 6. Web uygulamasını çalıştır
@@ -259,7 +260,8 @@ Ortak kurallar: tarih filtresi indeks kullanılabilecek şekilde (`OrderDate >= 
 2. **Geniş aralıklarda kazanç sınırlı.** Q1 ve Q3 tablonun %31–37'sini topluyor. Okuma 3,5 kat azaldı ama süre CPU'ya bağlı (sayma, tekrarsız müşteri bulma, gruplama), bu yüzden sadece %17–28 kısaldı. Bu tür raporlar için önceden hesaplanmış özet tablolar ya da columnstore indeks sonraki adım olabilir.
 3. **Bir sorgu en zayıf JOIN'i kadar hızlıdır.** Q2'de sadece tarih indeksi varken (Payments indeksi yokken) sorgu **2.320 ms**'ye çıktı: SQL Server 25 siparişin her biri için Payments'ın geçici kopyasını taradı (5,7 milyon okuma). FK kolonu `Payments.OrderId`'ye indeks eklenince 0 ms'ye indi. **FK kolonlarına indeks koymak** bu yüzden kural.
 4. **Columnstore ile geniş raporlar düzeldi.** Q7, 12 aydaki bütün sipariş kalemlerini topluyor. Rowstore indekslerle bilgisayar yeni açıldığında 44 sn sürdü ve uygulamada 120 sn zaman aşımına yol açtı (Satış Analizi sayfası açılmıyordu). Sütun bazlı ve sıkıştırılmış columnstore indeksler eklenince okunan sayfa ~3 kat azaldı, sorgu batch mode ile 1,3 sn'ye indi.
-5. **Keyset sayfalama**, derin sayfalarda OFFSET'ten daha istikrarlı: sayfa numarası büyüdükçe maliyeti artmıyor (6 okuma).
+5. **Sorgu kadar sunucu ayarı da önemli.** Geliştirme bilgisayarında RAM dolunca (boşta 820 MB kalmıştı) Windows SQL Server'ın belleğini geri aldı: SalesPulseDb'nin bellekteki payı **0 MB**'a düştü, plan önbelleği boşaldı ve yukarıdaki 1 sn'lik raporlar 2 dakikaya çıkıp zaman aşımına uğradı. Varsayılan `min server memory` sadece 16 MB. `06_server_settings.sql` ile 1024 MB'a ve `cost threshold for parallelism` 5'ten 50'ye çekilince Dashboard **~1,2 sn**, Satış Analizi **~1,7 sn**'de döndü. 3 yıllık aralıkta 4 ağır rapor aynı anda istendiğinde bile en uzun istek ~8 sn sürdü, zaman aşımı olmadı.
+6. **Keyset sayfalama**, derin sayfalarda OFFSET'ten daha istikrarlı: sayfa numarası büyüdükçe maliyeti artmıyor (6 okuma).
 
 ---
 
