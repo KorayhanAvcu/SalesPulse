@@ -124,7 +124,7 @@ database/05_verify_data.sql   → Satır sayıları, FK'ler, tutar tutarlılığ
 ### 5. Performansı ölç, indeksleri ve SP'leri ekle
 ```
 database/04_performance_tests.sql   → İndeks YOKKEN çalıştır, süreleri kaydet ("öncesi")
-database/02_indexes.sql             → 5 indeks
+database/02_indexes.sql             → 7 indeks (5 rowstore + 2 columnstore)
 database/03_stored_procedures.sql   → 13 stored procedure
 database/04_performance_tests.sql   → Tekrar çalıştır ("sonrası")
 ```
@@ -215,6 +215,8 @@ Veri hazır bir JSON'dan değil, **C# ile yazılmış bir veri üreticiyle** (`S
 | `IX_OrderDetails_OrderId` (INCLUDE ProductId, Quantity, UnitPrice) | Sipariş detayı, kategori/ürün raporları |
 | `UX_Payments_OrderId` (UNIQUE) | Sipariş–ödeme 1-1 ilişkisini garanti eder + Order Explorer'daki ödeme yöntemi JOIN'i |
 | `IX_Products_CategoryId` | Kategori raporlarında ürün JOIN'i |
+| `NCCI_Orders_Analytics` (columnstore) | Milyonlarca siparişi toplayan rapor sorguları |
+| `NCCI_OrderDetails_Analytics` (columnstore) | Kategori/ürün raporları: 3,5 milyon kalemin toplanması (TopCategories, TopProducts, CategoryMonthly) |
 
 ### Stored procedure'ler (`03_stored_procedures.sql`) — 13 adet
 
@@ -249,13 +251,15 @@ Ortak kurallar: tarih filtresi indeks kullanılabilecek şekilde (`OrderDate >= 
 | Q3 Top 20 müşteri + tekrar oranı (2025) | 624 ms | 516 ms | 16.872 → 5.760 | IX_Orders_OrderDate |
 | Q4 Sipariş detayı (tek sipariş) | 145 ms | ~0 ms | 13.888 → 3 | IX_OrderDetails_OrderId |
 | Q6 Derin sayfa: OFFSET 50.000 / keyset | 798 / 845 ms | 6 / 0 ms | 8.436 → 197 / 6 | IX_Orders_OrderDate |
+| Q7 `sp_Sales_CategoryMonthly` (son 12 ay) | 44 sn soğuk / 4 sn sıcak | 1,3 sn | 12.575 + 8.436 → ~4.351 + ~2.556 (lob, sıkıştırılmış) | NCCI_OrderDetails_Analytics + NCCI_Orders_Analytics |
 
 ### Bulgular
 
 1. **Seçici sorgularda kazanç dev.** Tek sipariş ya da "ilk 25 kayıt" gibi az satır isteyen sorgular (Q2, Q4, Q6) indeksle 100 kattan fazla hızlandı. Q4'te 2 satır için önce 13.888 sayfa okunuyordu, şimdi 3 sayfa (B-tree'de kök → ara → yaprak).
 2. **Geniş aralıklarda kazanç sınırlı.** Q1 ve Q3 tablonun %31–37'sini topluyor. Okuma 3,5 kat azaldı ama süre CPU'ya bağlı (sayma, tekrarsız müşteri bulma, gruplama), bu yüzden sadece %17–28 kısaldı. Bu tür raporlar için önceden hesaplanmış özet tablolar ya da columnstore indeks sonraki adım olabilir.
 3. **Bir sorgu en zayıf JOIN'i kadar hızlıdır.** Q2'de sadece tarih indeksi varken (Payments indeksi yokken) sorgu **2.320 ms**'ye çıktı: SQL Server 25 siparişin her biri için Payments'ın geçici kopyasını taradı (5,7 milyon okuma). FK kolonu `Payments.OrderId`'ye indeks eklenince 0 ms'ye indi. **FK kolonlarına indeks koymak** bu yüzden kural.
-4. **Keyset sayfalama**, derin sayfalarda OFFSET'ten daha istikrarlı: sayfa numarası büyüdükçe maliyeti artmıyor (6 okuma).
+4. **Columnstore ile geniş raporlar düzeldi.** Q7, 12 aydaki bütün sipariş kalemlerini topluyor. Rowstore indekslerle bilgisayar yeni açıldığında 44 sn sürdü ve uygulamada 120 sn zaman aşımına yol açtı (Satış Analizi sayfası açılmıyordu). Sütun bazlı ve sıkıştırılmış columnstore indeksler eklenince okunan sayfa ~3 kat azaldı, sorgu batch mode ile 1,3 sn'ye indi.
+5. **Keyset sayfalama**, derin sayfalarda OFFSET'ten daha istikrarlı: sayfa numarası büyüdükçe maliyeti artmıyor (6 okuma).
 
 ---
 
@@ -280,8 +284,8 @@ Tarih verilmezse varsayılan aralık **son 12 ay**dır (veri 31.10.2026'da bitiy
 
 - [x] Veri modeli, PK/FK ilişkileri
 - [x] Veri üretici (2 milyon sipariş) ve doğrulama
-- [x] 5 indeks, 13 stored procedure
+- [x] 7 indeks (5 rowstore + 2 columnstore), 13 stored procedure
 - [x] İndeks öncesi/sonrası performans ölçümü
 - [x] Entity, DataAccess (Dapper), Business, Controller katmanları
-- [ ] Arayüz: layout, Dashboard, Order Explorer, Sales Intelligence (Chart.js)
+- [x] Arayüz: layout, Dashboard, Order Explorer, Sales Intelligence (Chart.js)
 - [ ] Ekran görüntüleri ve execution plan görüntüleri

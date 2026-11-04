@@ -69,6 +69,26 @@ CREATE NONCLUSTERED INDEX IX_Products_CategoryId
     INCLUDE (Name);
 GO
 
+-- ---------------------------------------------
+-- 6) ve 7) COLUMNSTORE indeksler (rapor / analitik sorgular için)
+--    Normal (rowstore) indeks veriyi SATIR SATIR saklar: tek siparişi bulmaya çok iyi.
+--    Columnstore veriyi SÜTUN SÜTUN ve sıkıştırılmış saklar: "12 ayın toplam cirosu" gibi
+--    milyonlarca satırı toplayan sorgularda çok daha az sayfa okunur ve "batch mode" ile
+--    satırlar 900'lük paketler halinde işlenir.
+--    Ölçüm (sp_Sales_CategoryMonthly, son 12 ay):
+--      önce : 44 sn (soğuk önbellek) / 4 sn (sıcak), OrderDetails 12.575 + Orders 8.436 sayfa
+--      sonra: ~1,3 sn, OrderDetails ~4.351 + Orders ~2.556 sıkıştırılmış sayfa
+-- ---------------------------------------------
+DROP INDEX IF EXISTS NCCI_OrderDetails_Analytics ON dbo.OrderDetails;
+CREATE NONCLUSTERED COLUMNSTORE INDEX NCCI_OrderDetails_Analytics
+    ON dbo.OrderDetails (OrderId, ProductId, Quantity, UnitPrice);
+GO
+
+DROP INDEX IF EXISTS NCCI_Orders_Analytics ON dbo.Orders;
+CREATE NONCLUSTERED COLUMNSTORE INDEX NCCI_Orders_Analytics
+    ON dbo.Orders (OrderId, OrderDate, StatusId, CustomerId, ShippingCityId, TotalAmount);
+GO
+
 -- İstatistikleri güncelle (toplu yüklemeden sonra iyi alışkanlık)
 UPDATE STATISTICS dbo.Orders WITH FULLSCAN;
 UPDATE STATISTICS dbo.OrderDetails WITH FULLSCAN;
