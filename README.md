@@ -1,9 +1,23 @@
-﻿# SalesPulse
+﻿<div align="center">
+
+# SalesPulse
 
 **2 milyon siparişli bir e-ticaret mağazası için yönetim paneli**
-ASP.NET Core 8 · Dapper · SQL Server
 
-> M&Y Yazılım Eğitim Akademi — 7. Proje (Dapper Case)
+![.NET](https://img.shields.io/badge/ASP.NET%20Core-8.0-5b8def)
+![Dapper](https://img.shields.io/badge/Dapper-2.1-9b87f5)
+![SQL Server](https://img.shields.io/badge/SQL%20Server-2022%20Express-f29a52)
+![Chart.js](https://img.shields.io/badge/Chart.js-4.4-3fbf9b)
+
+M&Y Yazılım Eğitim Akademi — 7. Proje (Dapper Case)
+
+<img src="docs/screenshots/dashboard.png" alt="SalesPulse Dashboard ekranı: KPI kartları, aylık trend, kategori, şehir ve ürün raporları" width="860" />
+
+| 2.000.000 | 3.500.065 | 100.000 | 13 | 7 |
+|:---:|:---:|:---:|:---:|:---:|
+| sipariş | sipariş kalemi | müşteri | stored procedure | indeks |
+
+</div>
 
 ---
 
@@ -26,21 +40,27 @@ SalesPulse bu soruları üç sayfada cevaplıyor:
 
 ### Ekran görüntüleri
 
-**Dashboard** — KPI kartları, aylık trend, kategori, şehir, durum ve ürün raporları (son 12 ay)
+Büyütmek için görsele tıklayın.
 
-![Dashboard](docs/screenshots/dashboard.png)
-
-**Sipariş Yönetimi** — 2 milyon sipariş içinde arama, filtre, sıralama ve sayfalama
-
-![Sipariş Yönetimi](docs/screenshots/orders.png)
-
-Bir satıra tıklayınca sipariş detayı açılıyor:
-
-![Sipariş detayı](docs/screenshots/order-detail.png)
-
-**Satış Analizi** — geçen yılla karşılaştırma, tekrar alışveriş oranı, kategorilerin aylık performansı, en iyi müşteriler
-
-![Satış Analizi](docs/screenshots/sales.png)
+<table>
+  <tr>
+    <td width="34%" valign="top">
+      <a href="docs/screenshots/orders.png"><img src="docs/screenshots/orders.png" alt="Sipariş Yönetimi ekranı" /></a>
+      <br /><b>Sipariş Yönetimi</b><br />
+      <sub>2 milyon sipariş içinde arama, filtre, sıralama ve sayfalama</sub>
+    </td>
+    <td width="33%" valign="top">
+      <a href="docs/screenshots/order-detail.png"><img src="docs/screenshots/order-detail.png" alt="Sipariş detay penceresi" /></a>
+      <br /><b>Sipariş detayı</b><br />
+      <sub>Bir satıra tıklayınca açılan pencere</sub>
+    </td>
+    <td width="33%" valign="top">
+      <a href="docs/screenshots/sales.png"><img src="docs/screenshots/sales.png" alt="Satış Analizi ekranı" /></a>
+      <br /><b>Satış Analizi</b><br />
+      <sub>Geçen yılla karşılaştırma, tekrar alışveriş oranı, kategorilerin aylık performansı, en iyi müşteriler</sub>
+    </td>
+  </tr>
+</table>
 
 Projede asıl öğrenmek istediğim şey ekran yapmak değildi. Asıl soru şuydu: **2 milyon satırlık bir tabloyu yavaşlatmadan nasıl sorgularım?** Bu yüzden projenin tek bir kuralı var:
 
@@ -84,12 +104,40 @@ SalesPulse.sln
 └── database/                  → Bütün SQL dosyaları (tablolar, indeksler, SP'ler, testler)
 ```
 
-Tarayıcıdan bir tıklamanın veritabanına gidip geri dönmesi şöyle:
+Katmanlar birbirine tek yönde bağlı:
 
+```mermaid
+flowchart LR
+    Web["SalesPulse.Web<br/>Controller ve sayfalar"] --> Business["SalesPulse.Business<br/>İş kuralları"]
+    Business --> DataAccess["SalesPulse.DataAccess<br/>Dapper repository'leri"]
+    DataAccess --> DB[("SQL Server<br/>Tablolar, indeksler, SP'ler")]
+    Generator["SalesPulse.DataGenerator<br/>Veri üretici"] --> DB
+    Web -.-> Entity["SalesPulse.Entity<br/>DTO'lar"]
+    Business -.-> Entity
+    DataAccess -.-> Entity
 ```
-Tarayıcı → Controller → Service → Repository (Dapper) → Stored Procedure (SQL Server)
-                                                              │
-Tarayıcı ← Controller ← Service ← Repository ← DTO'lar ◄──────┘
+
+Dashboard'da tarih değiştirilince olanlar:
+
+```mermaid
+sequenceDiagram
+    actor K as Kullanıcı
+    participant J as Tarayıcı (JS)
+    participant C as Controller
+    participant S as Service
+    participant R as Repository (Dapper)
+    participant D as SQL Server (SP)
+    K->>J: Tarih aralığını seçer
+    J->>C: GET /Dashboard/Data
+    C->>S: GetDashboardAsync
+    S->>S: Tarih aralığını düzeltir
+    S->>R: Rapor sorgularını ister
+    R->>D: EXEC sp_Dashboard_Kpis ve diğerleri
+    D-->>R: Hesaplanmış sonuçlar
+    R-->>S: DTO'lar
+    S-->>C: DashboardDto
+    C-->>J: JSON
+    J-->>K: Kartlar ve grafikler güncellenir
 ```
 
 Controller SQL bilmez, repository iş kuralı bilmez. Bir yeri değiştirmek gerektiğinde nereye bakacağımı biliyorum.
@@ -132,21 +180,42 @@ database/06_server_settings.sql     → SQL Server'a en az 1 GB bellek ayır (ne
 
 ## Veritabanı
 
-```
-Cities (81) ◄──────────── Customers (100.000)
-   ▲                           ▲
-   │ ShippingCityId            │ CustomerId
-   │                           │
-OrderStatuses (6) ◄──── Orders (2.000.000) ────► Payments (2.000.000) ───► PaymentMethods (5)
-                               │                   (her siparişin 1 ödemesi var)
-                               │ OrderId
-                               ▼
-                        OrderDetails (3.500.065)
-                               │ ProductId
-                               ▼
-Publishers (29) ◄─────── Products (2.000) ───────► Categories (39)
-                                                     └─ ParentCategoryId → Categories
-                                                        (6 ana grup + 33 alt kategori)
+```mermaid
+erDiagram
+    Cities ||--o{ Customers : "yaşar"
+    Cities ||--o{ Orders : "teslimat"
+    Customers ||--o{ Orders : "verir"
+    OrderStatuses ||--o{ Orders : "durum"
+    Orders ||--|{ OrderDetails : "içerir"
+    Orders ||--|| Payments : "ödenir"
+    PaymentMethods ||--o{ Payments : "yöntem"
+    Products ||--o{ OrderDetails : "satılır"
+    Categories ||--o{ Products : "gruplar"
+    Categories |o--o{ Categories : "üst kategori"
+    Publishers |o--o{ Products : "yayınlar"
+
+    Orders {
+        int OrderId PK
+        int CustomerId FK
+        tinyint ShippingCityId FK
+        datetime2 OrderDate
+        tinyint StatusId FK
+        decimal TotalAmount
+    }
+    OrderDetails {
+        int OrderDetailId PK
+        int OrderId FK
+        int ProductId FK
+        smallint Quantity
+        decimal UnitPrice
+    }
+    Payments {
+        int PaymentId PK
+        int OrderId FK
+        tinyint PaymentMethodId FK
+        decimal Amount
+        tinyint InstallmentCount
+    }
 ```
 
 | Tablo | Satır | İçinde ne var |
@@ -251,6 +320,8 @@ Projenin en çok şey öğrendiğim kısmı burası oldu.
 | Q4 Tek siparişin detayı | 229 ms | 0 ms | 13.888 → 3 | IX_OrderDetails_OrderId |
 | Q6 50.000. sayfaya atlamak: OFFSET / keyset | 798 / 845 ms | 6 / 0 ms | 8.436 → 197 / 6 | IX_Orders_OrderDate |
 | Q7 Kategorilerin aylık performansı (son 12 ay) | 44 sn (soğuk) / 4 sn | 1,3 sn | 12.575 + 8.436 → ~4.351 + ~2.556 | Columnstore indeksler |
+
+<img src="docs/charts/okunan-sayfa.svg" alt="Altı sorguda indeks öncesi ve sonrası okunan sayfa sayısı. Verilerin tamamı üstteki tabloda." width="860" />
 
 > Q1–Q6 ham kayıtlardan alındı. Q7 ise columnstore indeksler eklenirken ayrıca ölçüldü, bu yüzden `perf_*` dosyalarında yer almıyor. Planı `07_execution_plans.sql` ile görülebilir.
 

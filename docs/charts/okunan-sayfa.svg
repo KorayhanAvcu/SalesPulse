@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 440" width="900" height="440" role="img" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+<title>İndeks öncesi ve sonrası okunan sayfa sayısı</title>
+<rect width="900" height="440" rx="12" fill="#ffffff"/>
+<text x="24.0" y="38.0" font-size="20" fill="#1f2a44" text-anchor="start" font-weight="650">İndekslerden sonra SQL Server çok daha az sayfa okuyor</text>
+<text x="24.0" y="62.0" font-size="13" fill="#5a6478" text-anchor="start" font-weight="400">Okunan sayfa sayısı (logical reads). Logaritmik eksen: her ızgara çizgisi 10 kat fark demek.</text>
+<circle cx="222" cy="88" r="6" fill="#c9782e"/>
+<text x="234.0" y="92.0" font-size="13" fill="#1f2a44" text-anchor="start" font-weight="400">İndeks yokken</text>
+<circle cx="354" cy="88" r="6" fill="#3f73e0"/>
+<text x="366.0" y="92.0" font-size="13" fill="#1f2a44" text-anchor="start" font-weight="400">İndeksle</text>
+<text x="876.0" y="92.0" font-size="13" fill="#5a6478" text-anchor="end" font-weight="600">Azalma</text>
+<line x1="216.0" y1="110" x2="216.0" y2="394" stroke="#e6e9f2" stroke-width="1"/>
+<text x="216.0" y="416.0" font-size="12" fill="#5a6478" text-anchor="middle" font-weight="400">1</text>
+<line x1="338.2" y1="110" x2="338.2" y2="394" stroke="#e6e9f2" stroke-width="1"/>
+<text x="338.2" y="416.0" font-size="12" fill="#5a6478" text-anchor="middle" font-weight="400">10</text>
+<line x1="460.4" y1="110" x2="460.4" y2="394" stroke="#e6e9f2" stroke-width="1"/>
+<text x="460.4" y="416.0" font-size="12" fill="#5a6478" text-anchor="middle" font-weight="400">100</text>
+<line x1="582.7" y1="110" x2="582.7" y2="394" stroke="#e6e9f2" stroke-width="1"/>
+<text x="582.7" y="416.0" font-size="12" fill="#5a6478" text-anchor="middle" font-weight="400">1.000</text>
+<line x1="704.9" y1="110" x2="704.9" y2="394" stroke="#e6e9f2" stroke-width="1"/>
+<text x="704.9" y="416.0" font-size="12" fill="#5a6478" text-anchor="middle" font-weight="400">10.000</text>
+<text x="24.0" y="145.5" font-size="13.5" fill="#1f2a44" text-anchor="start" font-weight="400">Q1  KPI kartları</text>
+<line x1="629.2" y1="141.0" x2="695.9" y2="141.0" stroke="#b8c0d0" stroke-width="2" stroke-linecap="round"/>
+<circle cx="695.9" cy="141.0" r="7" fill="#c9782e" stroke="#fff" stroke-width="2"/>
+<circle cx="629.2" cy="141.0" r="7" fill="#3f73e0" stroke="#fff" stroke-width="2"/>
+<text x="695.9" y="129.0" font-size="12" fill="#5a6478" text-anchor="middle" font-weight="400">8.436</text>
+<text x="629.2" y="129.0" font-size="12" fill="#1f2a44" text-anchor="middle" font-weight="600">2.404</text>
+<text x="876.0" y="145.5" font-size="13.5" fill="#1f2a44" text-anchor="end" font-weight="650">3,5 kat</text>
+<text x="24.0" y="191.5" font-size="13.5" fill="#1f2a44" text-anchor="start" font-weight="400">Q2  Sipariş listesi</text>
+<line x1="511.6" y1="187.0" x2="736.5" y2="187.0" stroke="#b8c0d0" stroke-width="2" stroke-linecap="round"/>
+<circle cx="736.5" cy="187.0" r="7" fill="#c9782e" stroke="#fff" stroke-width="2"/>
+<circle cx="511.6" cy="187.0" r="7" fill="#3f73e0" stroke="#fff" stroke-width="2"/>
+<text x="736.5" y="175.0" font-size="12" fill="#5a6478" text-anchor="middle" font-weight="400">18.131</text>
+<text x="511.6" y="175.0" font-size="12" fill="#1f2a44" text-anchor="middle" font-weight="600">262</text>
+<text x="876.0" y="191.5" font-size="13.5" fill="#1f2a44" text-anchor="end" font-weight="650">69 kat</text>
+<text x="24.0" y="237.5" font-size="13.5" fill="#1f2a44" text-anchor="start" font-weight="400">Q3  En iyi müşteriler</text>
+<line x1="675.6" y1="233.0" x2="732.7" y2="233.0" stroke="#b8c0d0" stroke-width="2" stroke-linecap="round"/>
+<circle cx="732.7" cy="233.0" r="7" fill="#c9782e" stroke="#fff" stroke-width="2"/>
+<circle cx="675.6" cy="233.0" r="7" fill="#3f73e0" stroke="#fff" stroke-width="2"/>
+<text x="732.7" y="221.0" font-size="12" fill="#5a6478" text-anchor="middle" font-weight="400">16.872</text>
+<text x="675.6" y="221.0" font-size="12" fill="#1f2a44" text-anchor="middle" font-weight="600">5.760</text>
+<text x="876.0" y="237.5" font-size="13.5" fill="#1f2a44" text-anchor="end" font-weight="650">2,9 kat</text>
+<text x="24.0" y="283.5" font-size="13.5" fill="#1f2a44" text-anchor="start" font-weight="400">Q4  Tek sipariş detayı</text>
+<line x1="274.3" y1="279.0" x2="722.3" y2="279.0" stroke="#b8c0d0" stroke-width="2" stroke-linecap="round"/>
+<circle cx="722.3" cy="279.0" r="7" fill="#c9782e" stroke="#fff" stroke-width="2"/>
+<circle cx="274.3" cy="279.0" r="7" fill="#3f73e0" stroke="#fff" stroke-width="2"/>
+<text x="722.3" y="267.0" font-size="12" fill="#5a6478" text-anchor="middle" font-weight="400">13.888</text>
+<text x="274.3" y="267.0" font-size="12" fill="#1f2a44" text-anchor="middle" font-weight="600">3</text>
+<text x="876.0" y="283.5" font-size="13.5" fill="#1f2a44" text-anchor="end" font-weight="650">4.629 kat</text>
+<text x="24.0" y="329.5" font-size="13.5" fill="#1f2a44" text-anchor="start" font-weight="400">Q6  50.000. sayfa, OFFSET</text>
+<line x1="496.4" y1="325.0" x2="695.9" y2="325.0" stroke="#b8c0d0" stroke-width="2" stroke-linecap="round"/>
+<circle cx="695.9" cy="325.0" r="7" fill="#c9782e" stroke="#fff" stroke-width="2"/>
+<circle cx="496.4" cy="325.0" r="7" fill="#3f73e0" stroke="#fff" stroke-width="2"/>
+<text x="695.9" y="313.0" font-size="12" fill="#5a6478" text-anchor="middle" font-weight="400">8.436</text>
+<text x="496.4" y="313.0" font-size="12" fill="#1f2a44" text-anchor="middle" font-weight="600">197</text>
+<text x="876.0" y="329.5" font-size="13.5" fill="#1f2a44" text-anchor="end" font-weight="650">43 kat</text>
+<text x="24.0" y="375.5" font-size="13.5" fill="#1f2a44" text-anchor="start" font-weight="400">Q6  50.000. sayfa, keyset</text>
+<line x1="311.1" y1="371.0" x2="695.9" y2="371.0" stroke="#b8c0d0" stroke-width="2" stroke-linecap="round"/>
+<circle cx="695.9" cy="371.0" r="7" fill="#c9782e" stroke="#fff" stroke-width="2"/>
+<circle cx="311.1" cy="371.0" r="7" fill="#3f73e0" stroke="#fff" stroke-width="2"/>
+<text x="695.9" y="359.0" font-size="12" fill="#5a6478" text-anchor="middle" font-weight="400">8.436</text>
+<text x="311.1" y="359.0" font-size="12" fill="#1f2a44" text-anchor="middle" font-weight="600">6</text>
+<text x="876.0" y="375.5" font-size="13.5" fill="#1f2a44" text-anchor="end" font-weight="650">1.406 kat</text>
+</svg>
