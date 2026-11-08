@@ -311,6 +311,7 @@ GO
 -- 9) Kontrollü CSV dışa aktarma: filtreler sp_Orders_Search ile aynı mantık,
 --    ama tek seferde en fazla @MaxRows (üst sınır 10.000) satır.
 CREATE OR ALTER PROCEDURE dbo.sp_Orders_Export
+    @Search     NVARCHAR(100) = NULL,   -- sipariş no (sayıysa) veya müşteri adı/e-posta
     @StartDate  DATE          = NULL,
     @EndDate    DATE          = NULL,
     @CityId     TINYINT       = NULL,
@@ -322,6 +323,10 @@ AS
 BEGIN
     SET NOCOUNT ON;
     IF @MaxRows NOT BETWEEN 1 AND 10000 SET @MaxRows = 10000;
+
+    SET @Search = NULLIF(LTRIM(RTRIM(@Search)), N'');   -- boş arama = filtre yok
+    DECLARE @OrderNo INT = TRY_CAST(@Search AS INT);
+    DECLARE @Like NVARCHAR(102) = CASE WHEN @Search IS NULL OR @OrderNo IS NOT NULL THEN NULL ELSE @Search + N'%' END;
     DECLARE @To DATETIME2(0) = CASE WHEN @EndDate IS NULL THEN NULL ELSE DATEADD(DAY, 1, CAST(@EndDate AS DATETIME2(0))) END;
 
     SELECT TOP (@MaxRows)
@@ -338,7 +343,9 @@ BEGIN
     JOIN dbo.OrderStatuses os ON os.StatusId   = o.StatusId
     LEFT JOIN dbo.Payments pa       ON pa.OrderId = o.OrderId
     LEFT JOIN dbo.PaymentMethods pm ON pm.PaymentMethodId = pa.PaymentMethodId
-    WHERE (@StartDate IS NULL OR o.OrderDate >= @StartDate)
+    WHERE (@OrderNo   IS NULL OR o.OrderId = @OrderNo)
+      AND (@Like      IS NULL OR cu.FirstName + N' ' + cu.LastName LIKE @Like OR cu.LastName LIKE @Like OR cu.Email LIKE @Like)
+      AND (@StartDate IS NULL OR o.OrderDate >= @StartDate)
       AND (@To        IS NULL OR o.OrderDate <  @To)
       AND (@CityId    IS NULL OR o.ShippingCityId = @CityId)
       AND (@StatusId  IS NULL OR o.StatusId = @StatusId)

@@ -84,6 +84,7 @@ public class OrderRepository : IOrderRepository
                 filter.StatusId,
                 filter.MinAmount,
                 filter.MaxAmount,
+                filter.Search,
                 MaxRows = maxRows
             },
             commandType: CommandType.StoredProcedure);

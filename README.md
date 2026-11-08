@@ -239,18 +239,20 @@ Bütün SP'lerde uyduğum birkaç kural:
 
 Projenin en çok şey öğrendiğim kısmı burası oldu.
 
-**Nasıl ölçtüm:** SQL Server 2022 Express, kendi bilgisayarım, `SET STATISTICS IO, TIME ON`. Her sorguyu iki kez çalıştırıp ikinci sonucu aldım. Önce indeks yokken ölçtüm, sonra indeksleri ekleyip tekrar ölçtüm. Ham çıktılar `database/perf_before_messages.txt` ve `database/perf_after_messages.txt` dosyalarında.
+**Nasıl ölçtüm:** SQL Server 2022 Express, kendi bilgisayarım, `SET STATISTICS IO, TIME ON`. Her sorguyu indeks öncesi ve sonrası için birer kez çalıştırdım; tablodaki süreler ham kayıtlardaki süre satırlarından alındı. Önce indeks yokken ölçtüm, sonra indeksleri ekleyip tekrar ölçtüm. Ham çıktılar `database/perf_before_messages.txt` ve `database/perf_after_messages.txt` dosyalarında.
 
 "Logical reads" SQL Server'ın kaç sayfa (8 KB'lık blok) okuduğunu gösteriyor. Süre bilgisayarın o anki durumuna göre oynayabilir, ama okunan sayfa sayısı yalan söylemez.
 
 | Sorgu | Önce | Sonra | Okunan sayfa | Kullanılan indeks |
 |---|---|---|---|---|
-| Q1 Dashboard KPI'ları (2026 Ocak–Ekim) | 280 ms | 201 ms | 8.436 → 2.404 | IX_Orders_OrderDate |
-| Q2 Sipariş listesi, 1. sayfa (İstanbul, son 3 ay) | 982 ms | ~0 ms | ~18.100 → 274 | IX_Orders_OrderDate + UX_Payments_OrderId |
-| Q3 En iyi 20 müşteri + tekrar oranı (2025) | 624 ms | 516 ms | 16.872 → 5.760 | IX_Orders_OrderDate |
-| Q4 Tek siparişin detayı | 145 ms | ~0 ms | 13.888 → 3 | IX_OrderDetails_OrderId |
+| Q1 Dashboard KPI'ları (2026 Ocak–Ekim) | 445 ms | 372 ms | 8.436 → 2.404 | IX_Orders_OrderDate |
+| Q2 Sipariş listesi, 1. sayfa (İstanbul, son 3 ay) | 1.564 ms | 15 ms | ~18.100 → 262 | IX_Orders_OrderDate + UX_Payments_OrderId |
+| Q3 En iyi 20 müşteri + tekrar oranı (2025) | 853 ms | 687 ms | 16.872 → 5.760 | IX_Orders_OrderDate |
+| Q4 Tek siparişin detayı | 229 ms | 0 ms | 13.888 → 3 | IX_OrderDetails_OrderId |
 | Q6 50.000. sayfaya atlamak: OFFSET / keyset | 798 / 845 ms | 6 / 0 ms | 8.436 → 197 / 6 | IX_Orders_OrderDate |
 | Q7 Kategorilerin aylık performansı (son 12 ay) | 44 sn (soğuk) / 4 sn | 1,3 sn | 12.575 + 8.436 → ~4.351 + ~2.556 | Columnstore indeksler |
+
+> Q1–Q6 ham kayıtlardan alındı. Q7 ise columnstore indeksler eklenirken ayrıca ölçüldü, bu yüzden `perf_*` dosyalarında yer almıyor. Planı `07_execution_plans.sql` ile görülebilir.
 
 ### Execution plan'ler
 
@@ -268,7 +270,7 @@ Planları kendin görmek istersen sorgular `database/07_execution_plans.sql` dos
 
 **1. Az satır isteyen sorgularda indeks mucize gibi.** Tek bir siparişin kalemlerini bulmak için (Q4) SQL Server önce 13.888 sayfa okuyordu, yani 3,5 milyon satırın hepsine bakıyordu. İndeksten sonra 3 sayfa okuyor: kök → ara → yaprak, bitti. Q2, Q4 ve Q6 yüz kattan fazla hızlandı.
 
-**2. Çok satır toplayan sorgularda tek başına yetmiyor.** Q1 ve Q3 tablonun üçte birini topluyor. Okunan sayfa 3,5 kat azaldı ama süre sadece %17–28 kısaldı, çünkü asıl zaman saymaya ve gruplamaya gidiyor. Okumayı hızlandırmak tek başına yetmedi.
+**2. Çok satır toplayan sorgularda tek başına yetmiyor.** Q1 ve Q3 tablonun üçte birini topluyor. Okunan sayfa 3,5 kat azaldı ama süre sadece %16–20 kısaldı, çünkü asıl zaman saymaya ve gruplamaya gidiyor. Okumayı hızlandırmak tek başına yetmedi.
 
 **3. Bir sorgu, en zayıf JOIN'i kadar hızlı.** Q2'de sadece tarih indeksi varken sorgu daha da yavaşladı: **2.320 ms**. Sebebi şuydu: listedeki 25 siparişin her biri için ödeme tablosu baştan taranıyordu (5,7 milyon okuma). `Payments.OrderId`'ye indeks ekleyince 0 ms'ye indi. O günden beri kuralım: **foreign key kolonlarına her zaman indeks koy.**
 
